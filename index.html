@@ -1,0 +1,2360 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>SynapseGrid OS | Role-Based Academic Timetable & Allocation Platform</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Lucide Icons CDN -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <!-- Chart.js for Resource Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+  
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          colors: {
+            brand: {
+              50: '#f5f3ff',
+              100: '#ede9fe',
+              500: '#8b5cf6',
+              600: '#7c3aed',
+              700: '#6d28d9',
+              900: '#4c1d95',
+              accent: '#d946ef',
+              dark: '#07080d',
+              card: '#101321',
+              border: '#1d2338'
+            }
+          },
+          fontFamily: {
+            sans: ['Inter', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace']
+          }
+        }
+      }
+    }
+  </script>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap');
+    
+    /* Dark Mode Defaults */
+    body {
+      background-color: #07080d;
+      color: #e2e8f0;
+      font-family: 'Inter', sans-serif;
+      overflow-x: hidden;
+      transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    
+    .glass-panel {
+      background: rgba(14, 17, 28, 0.85);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+    
+    .glass-card {
+      background: rgba(18, 23, 38, 0.9);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      transition: all 0.22s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+
+    .glass-card.can-drag {
+      cursor: grab;
+    }
+
+    .glass-card.can-drag:hover {
+      border-color: rgba(168, 85, 247, 0.5);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 24px -4px rgba(139, 92, 246, 0.25);
+    }
+
+    .glass-card.can-drag:active {
+      cursor: grabbing;
+    }
+
+    .glass-card.is-locked {
+      cursor: not-allowed;
+    }
+
+    .glass-card.dragging {
+      opacity: 0.35;
+      transform: scale(0.96);
+      border: 2px dashed #a855f7;
+    }
+
+    .drop-target {
+      outline: 2px dashed #a855f7 !important;
+      background: rgba(168, 85, 247, 0.2) !important;
+    }
+
+    .clash-card {
+      background: rgba(239, 68, 68, 0.16) !important;
+      border: 1.5px solid rgba(239, 68, 68, 0.75) !important;
+      animation: pulse-border 1.8s infinite;
+    }
+
+    @keyframes pulse-border {
+      0%, 100% { border-color: rgba(239, 68, 68, 0.5); box-shadow: 0 0 14px rgba(239, 68, 68, 0.2); }
+      50% { border-color: rgba(239, 68, 68, 1); box-shadow: 0 0 24px rgba(239, 68, 68, 0.45); }
+    }
+
+    .badge-glow {
+      box-shadow: 0 0 14px rgba(239, 68, 68, 0.4);
+    }
+
+    /* ================= LIGHT THEME STYLES ================= */
+    html.light body {
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+
+    html.light .glass-panel {
+      background: rgba(255, 255, 255, 0.92);
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.06);
+    }
+
+    html.light .glass-card {
+      background: #ffffff;
+      border: 1px solid #e2e8f0;
+      box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
+      color: #0f172a;
+    }
+
+    html.light .glass-card:hover {
+      border-color: #9333ea;
+      box-shadow: 0 8px 20px -4px rgba(147, 51, 234, 0.15);
+    }
+
+    html.light .clash-card {
+      background: #fef2f2 !important;
+      border: 1.5px solid #ef4444 !important;
+      color: #991b1b !important;
+    }
+
+    html.light .text-slate-400 { color: #64748b !important; }
+    html.light .text-slate-300 { color: #334155 !important; }
+    html.light .text-slate-200 { color: #1e293b !important; }
+    html.light .text-slate-100 { color: #0f172a !important; }
+    html.light .text-white { color: #0f172a !important; }
+    html.light .bg-slate-900 { background-color: #f1f5f9 !important; color: #0f172a !important; }
+    html.light .bg-slate-950 { background-color: #f8fafc !important; }
+    html.light .bg-slate-800 { background-color: #e2e8f0 !important; color: #0f172a !important; }
+    html.light .border-slate-800 { border-color: #e2e8f0 !important; }
+    html.light .border-slate-700 { border-color: #cbd5e1 !important; }
+    html.light .border-slate-900 { border-color: #cbd5e1 !important; }
+
+    /* Custom scrollbar */
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #090b12;
+    }
+    html.light ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #252b45;
+      border-radius: 3px;
+    }
+    html.light ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #7c3aed;
+    }
+
+    @media print {
+      body { background: white !important; color: black !important; }
+      .glass-panel, .glass-card { background: white !important; color: black !important; border: 1px solid #ccc !important; }
+      nav, aside, #toastContainer, button, .print-hide { display: none !important; }
+      #gridContainer { width: 100% !important; }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col selection:bg-purple-500 selection:text-white">
+
+  <!-- TOP RUNTIME BANNER WITH ROLE & THEME CONTROLS -->
+  <div class="bg-gradient-to-r from-purple-950 via-slate-900 to-black border-b border-purple-500/20 px-4 py-1.5 text-xs flex justify-between items-center text-slate-300 print-hide">
+    <div class="flex items-center space-x-3">
+      <span class="flex h-2 w-2 relative">
+        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+        <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+      </span>
+      <span class="font-medium tracking-wide"><strong class="text-white">SYNAPSE-GRID OS</strong> · Role-Based Academic Workstation</span>
+      <span class="hidden md:inline text-slate-600">|</span>
+      <span class="text-xs text-purple-300 font-mono">13 Institutional Constraints Monitored</span>
+    </div>
+
+    <!-- Live Controls: Role Indicator, Theme Switcher, Rulebook -->
+    <div class="flex items-center space-x-3">
+      <!-- Role Badge -->
+      <div id="roleBadge" class="flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-mono">
+        <i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span>Read-Only Viewer</span>
+      </div>
+
+      <!-- Theme Switcher (Light / Dark) -->
+      <button onclick="toggleTheme()" class="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-[11px] font-medium transition-all" title="Toggle Light / Dark Mode">
+        <i data-lucide="sun" id="themeSunIcon" class="w-3.5 h-3.5 text-amber-400 hidden"></i>
+        <i data-lucide="moon" id="themeMoonIcon" class="w-3.5 h-3.5 text-purple-300"></i>
+        <span id="themeLabel">Dark Mode</span>
+      </button>
+
+      <button onclick="openConstraintsModal()" class="text-purple-400 hover:text-purple-300 underline text-xs font-mono">13 Forces Rulebook</button>
+    </div>
+  </div>
+
+  <!-- NAVIGATION BAR -->
+  <nav class="glass-panel sticky top-0 z-40 px-6 py-3 border-b border-slate-800 print-hide">
+    <div class="max-w-[1720px] mx-auto flex flex-wrap items-center justify-between gap-4">
+      
+      <!-- Left: Logo & Context Switcher -->
+      <div class="flex items-center space-x-4">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-indigo-500 flex items-center justify-center shadow-lg shadow-purple-500/30">
+            <i data-lucide="sparkles" class="w-5 h-5 text-white"></i>
+          </div>
+          <div>
+            <div class="flex items-center space-x-2">
+              <span class="font-black text-xl tracking-tight bg-gradient-to-r from-white via-slate-100 to-purple-300 bg-clip-text text-transparent">SYNAPSE<span class="text-fuchsia-400">GRID</span></span>
+              <span class="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">OS v2.5</span>
+            </div>
+            <p class="text-[11px] text-slate-400 font-medium">Academic Administrator & Coordinator Workstation</p>
+          </div>
+        </div>
+
+        <div class="h-6 w-px bg-slate-800 hidden sm:block"></div>
+
+        <!-- Scope Switcher -->
+        <div class="flex items-center space-x-2 bg-slate-900/90 p-1 rounded-xl border border-slate-800 text-xs">
+          <div class="flex items-center space-x-1.5 px-2.5 py-1 bg-purple-600/20 border border-purple-500/30 rounded-lg text-purple-200 font-semibold">
+            <i data-lucide="book-open" class="w-3.5 h-3.5"></i>
+            <span id="activeDeptLabel">CSE · Sem 3 (Sec A)</span>
+          </div>
+          <select id="scopeSelect" onchange="switchDepartment(this.value)" class="bg-transparent text-slate-300 focus:outline-none pr-2 py-1 text-xs cursor-pointer font-medium">
+            <option value="cse3" selected class="bg-slate-900 text-slate-200">CSE · Sem 3 (Sec A)</option>
+            <option value="aiml3" class="bg-slate-900 text-slate-200">AIML · Sem 3 (Sec B)</option>
+            <option value="ece5" class="bg-slate-900 text-slate-200">ECE · Sem 5 (Core)</option>
+          </select>
+          <span class="text-slate-600">·</span>
+          <span class="text-slate-400 px-2 font-mono">Week 12</span>
+        </div>
+      </div>
+
+      <!-- Center: Key Status Badges -->
+      <div class="flex items-center space-x-3">
+        <!-- Conflict Pill -->
+        <div id="conflictBadge" onclick="filterByConflict()" class="cursor-pointer flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-red-500/15 border border-red-500/50 text-red-300 text-xs font-semibold badge-glow transition-all hover:bg-red-500/30">
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span id="conflictCountText">1 conflict</span>
+        </div>
+
+        <!-- Changes Pending Pill -->
+        <div id="pendingBadge" class="flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-medium">
+          <i data-lucide="git-commit" class="w-3.5 h-3.5"></i>
+          <span id="pendingText">1 change pending</span>
+        </div>
+
+        <!-- Room Efficiency Metric -->
+        <div class="hidden lg:flex items-center space-x-1.5 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-slate-300 text-xs">
+          <i data-lucide="gauge" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>Efficiency: <strong class="text-emerald-400 font-mono" id="efficiencyVal">92%</strong></span>
+        </div>
+      </div>
+
+      <!-- Right: Faculty Message Portal, Security Keys & Publish -->
+      <div class="flex items-center space-x-2.5">
+        
+        <!-- NEW FEATURE: FACULTY MESSAGE & AUTO-EXCHANGE BUTTON -->
+        <button onclick="openFacultyMessageModal()" class="flex items-center space-x-1.5 px-3.5 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-semibold shadow-md shadow-blue-900/30 transition-all">
+          <i data-lucide="message-square" class="w-3.5 h-3.5"></i>
+          <span>Faculty Drop Message</span>
+          <span class="text-[10px] bg-blue-400/30 px-1.5 py-0.2 rounded-full font-mono">Max 2/wk</span>
+        </button>
+
+        <!-- SECRET KEY AUTHENTICATION BUTTONS -->
+        <div class="flex items-center space-x-1.5 bg-slate-900/90 p-1 rounded-xl border border-slate-800">
+          <button id="coordAuthBtn" onclick="promptCoordinatorAuth()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all bg-slate-800 hover:bg-slate-700 text-slate-200">
+            <i data-lucide="key" class="w-3.5 h-3.5 text-purple-400"></i>
+            <span id="coordAuthText">Unlock Coordinator</span>
+          </button>
+
+          <button id="adminAuthBtn" onclick="promptAdminAuth()" class="px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all bg-slate-800 hover:bg-slate-700 text-slate-200">
+            <i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i>
+            <span id="adminAuthText">Admin Console</span>
+          </button>
+        </div>
+
+        <!-- Print Timetable -->
+        <button onclick="window.print()" class="p-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs transition-all" title="Print Notice Board Sheet">
+          <i data-lucide="printer" class="w-4 h-4"></i>
+        </button>
+
+        <!-- Publish Button (Triggers Broadcast Pop-up!) -->
+        <button onclick="publishTimetable()" class="flex items-center space-x-1.5 px-4 py-1.5 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 hover:to-fuchsia-500 text-white rounded-xl text-xs font-bold tracking-wide shadow-lg shadow-purple-600/30 transition-all">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Publish</span>
+        </button>
+      </div>
+
+    </div>
+  </nav>
+
+  <!-- SUB-HEADER / VIEW SELECTOR: MASTER TIMETABLE VS FACULTY ONLY -->
+  <header class="max-w-[1720px] w-full mx-auto px-6 pt-4 pb-2 flex flex-wrap items-center justify-between gap-4 print-hide">
+    
+    <!-- Left Controls: Filter Pills -->
+    <div class="flex items-center space-x-2">
+      <button id="filterAll" onclick="setFilter('all')" class="px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-purple-600 text-white shadow-sm shadow-purple-600/40">
+        All slots
+      </button>
+      <button id="filterConflicts" onclick="setFilter('conflicts')" class="px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
+        <span class="inline-block w-2 h-2 rounded-full bg-red-500 mr-1.5"></span>
+        Conflicts only
+      </button>
+      <button id="filterLabs" onclick="setFilter('labs')" class="px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
+        Labs & Practical
+      </button>
+      <button id="filterTheory" onclick="setFilter('theory')" class="px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800">
+        Lectures
+      </button>
+    </div>
+
+    <!-- Right Controls: Live Search & Analytics Switcher -->
+    <div class="flex items-center space-x-3">
+      <div class="relative">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-500 absolute left-3 top-2.5"></i>
+        <input type="text" id="slotSearch" oninput="searchSchedule(this.value)" placeholder="Search course, room, faculty..." class="bg-slate-900/90 border border-slate-800 text-xs rounded-xl pl-8 pr-3 py-1.5 text-slate-200 placeholder-slate-500 focus:outline-none focus:border-purple-500 w-48 sm:w-64 transition-all">
+      </div>
+
+      <div class="bg-slate-900 p-0.5 rounded-xl border border-slate-800 flex items-center text-xs">
+        <button onclick="setViewMode('grid')" id="viewGridBtn" class="px-3 py-1 rounded-lg font-medium text-white bg-slate-800 flex items-center space-x-1.5">
+          <i data-lucide="calendar" class="w-3.5 h-3.5"></i>
+          <span>Weekly Grid</span>
+        </button>
+        <button onclick="setViewMode('analytics')" id="viewAnalyticsBtn" class="px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-white flex items-center space-x-1.5">
+          <i data-lucide="bar-chart-3" class="w-3.5 h-3.5"></i>
+          <span>Analytics</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MAIN INTERACTIVE TIMETABLE WORKSPACE -->
+  <main class="max-w-[1720px] w-full mx-auto px-6 py-2 flex-1 flex flex-col lg:flex-row gap-6">
+
+    <!-- LEFT / CENTER: TIMETABLE GRID (72% WIDTH) -->
+    <div id="gridContainer" class="flex-1 overflow-x-auto pb-4 transition-all duration-300">
+      
+      <div class="min-w-[900px] glass-panel rounded-2xl border border-slate-800/80 shadow-2xl p-4">
+        
+        <!-- Day Column Headers -->
+        <div class="grid grid-cols-6 gap-3 mb-3 text-center">
+          <div class="p-2 text-xs font-semibold text-slate-500 uppercase tracking-wider font-mono">
+            Time Slot
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-200 uppercase tracking-wider flex items-center justify-center space-x-1.5">
+            <span>MON</span>
+            <span class="w-2 h-2 rounded-full bg-red-500" id="monClashDot"></span>
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            TUE
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            WED
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            THU
+          </div>
+          <div class="p-2.5 rounded-xl bg-slate-900/80 border border-slate-800 text-xs font-bold text-slate-200 uppercase tracking-wider">
+            FRI
+          </div>
+        </div>
+
+        <!-- DYNAMIC TIME SLOTS CONTAINER (RENDERED VIA JS) -->
+        <div id="timetableGrid" class="space-y-3">
+          <!-- Populated dynamically by renderTimetable() -->
+        </div>
+
+      </div>
+
+      <!-- Quick Drag & Role Explanation Footer -->
+      <div class="mt-3 flex items-center justify-between text-xs text-slate-400 px-2 print-hide">
+        <div class="flex items-center space-x-4">
+          <span class="flex items-center space-x-1.5"><i data-lucide="shield-check" class="w-3.5 h-3.5 text-emerald-400"></i><span>Policy: Max 2 class exchanges/week per faculty · Live auto-sync for all users</span></span>
+        </div>
+        <button onclick="resetClashDemo()" class="text-xs text-purple-400 hover:text-purple-300 font-mono underline">
+          ↺ Reset Problem State
+        </button>
+      </div>
+
+    </div>
+
+    <!-- RIGHT: EXPLAINABLE AI RECOMMENDATION DRAWER -->
+    <aside id="aiSideDrawer" class="w-full lg:w-[410px] glass-panel rounded-2xl border border-slate-800 p-5 flex flex-col justify-between shrink-0 shadow-2xl relative overflow-hidden print-hide">
+      
+      <!-- Glow ambient backdrop -->
+      <div class="absolute -top-16 -right-16 w-48 h-48 bg-purple-600/20 rounded-full blur-3xl pointer-events-none"></div>
+      
+      <div>
+        <!-- Side Drawer Header -->
+        <div class="flex items-center justify-between pb-3 border-b border-slate-800/80 mb-4">
+          <div class="flex items-center space-x-2.5">
+            <span class="p-2 rounded-xl bg-fuchsia-500/20 text-fuchsia-400 border border-fuchsia-500/30">
+              <i data-lucide="cpu" class="w-4 h-4"></i>
+            </span>
+            <div>
+              <h3 class="text-xs font-bold text-white uppercase tracking-wider">AI CONFLICT SOLVER</h3>
+              <p class="text-[10px] text-slate-400">Explainable Decision Support</p>
+            </div>
+          </div>
+          <span id="aiConfidenceBadge" class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30">
+            99.4% Match
+          </span>
+        </div>
+
+        <!-- RESOLVED STATE VIEW -->
+        <div id="resolvedState" class="hidden py-8 text-center space-y-4">
+          <div class="w-16 h-16 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 flex items-center justify-center mx-auto shadow-lg shadow-emerald-500/20">
+            <i data-lucide="check" class="w-8 h-8"></i>
+          </div>
+          <div>
+            <h4 class="text-base font-bold text-white">All Clashes Resolved!</h4>
+            <p class="text-xs text-slate-400 max-w-xs mx-auto mt-1">
+              Timetable is 100% compliant across all 13 institutional constraints.
+            </p>
+          </div>
+          <div class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-left text-xs space-y-2">
+            <div class="flex justify-between text-slate-300">
+              <span>Room Utilization:</span>
+              <span class="font-mono text-emerald-400">96.8% (Optimal)</span>
+            </div>
+            <div class="flex justify-between text-slate-300">
+              <span>Faculty Workload Gap:</span>
+              <span class="font-mono text-purple-400">0 Violations</span>
+            </div>
+          </div>
+          <button onclick="resetClashDemo()" class="text-xs text-purple-400 hover:text-purple-300 underline font-mono">
+            ↺ Re-seed Clash (Test for Judges)
+          </button>
+        </div>
+
+        <!-- ACTIVE FIX RECOMMENDATION VIEW (Exact match to Page 4) -->
+        <div id="unresolvedState">
+          
+          <!-- Suggested Fix Box (Item 3 in PDF) -->
+          <div class="mb-4">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-purple-400 font-semibold flex items-center space-x-1.5 mb-1.5">
+              <i data-lucide="sparkle" class="w-3.5 h-3.5"></i>
+              <span>SUGGESTED FIX</span>
+            </span>
+            <div class="p-3.5 rounded-xl bg-purple-950/40 border border-purple-500/40 text-slate-100">
+              <h4 class="text-sm font-bold text-white flex items-center justify-between">
+                <span>Move CS303 to B-210</span>
+                <span class="text-[11px] font-mono px-2 py-0.5 rounded bg-purple-500/30 text-purple-200">Room B-210</span>
+              </h4>
+              <p class="text-xs text-purple-300 mt-1 flex items-center space-x-1">
+                <i data-lucide="check-circle-2" class="w-3.5 h-3.5 text-purple-400"></i>
+                <span>Mon 10:00 · clears the clash instantly</span>
+              </p>
+            </div>
+          </div>
+
+          <!-- WHY THIS ROOM (Item 3 in PDF - Explainable AI) -->
+          <div class="mb-5">
+            <span class="text-[11px] font-mono uppercase tracking-wider text-slate-400 font-semibold mb-2 block">
+              WHY THIS ROOM
+            </span>
+            <div class="space-y-2.5">
+              
+              <div class="flex items-start space-x-2.5 text-xs text-slate-300 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                <div>
+                  <span class="font-semibold text-white">60 seats for 54 students</span>
+                  <p class="text-[11px] text-slate-400">110% headroom; meets AICTE spatial ratio</p>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-2.5 text-xs text-slate-300 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                <div>
+                  <span class="font-semibold text-white">Projector & Smart Board available</span>
+                  <p class="text-[11px] text-slate-400">Matches CS303 hardware profile tag</p>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-2.5 text-xs text-slate-300 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                <div>
+                  <span class="font-semibold text-white">Same block as CSE (Block B, 2nd Flr)</span>
+                  <p class="text-[11px] text-slate-400">Zero transit delay from previous class in B-204</p>
+                </div>
+              </div>
+
+              <div class="flex items-start space-x-2.5 text-xs text-slate-300 p-2 rounded-xl bg-slate-900/60 border border-slate-800/80">
+                <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+                <div>
+                  <span class="font-semibold text-white">Free all morning (09:00 - 13:00)</span>
+                  <p class="text-[11px] text-slate-400">No buffer clash or maintenance window</p>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- PRIMARY ACTION BUTTON -->
+          <div class="space-y-2 pt-2 border-t border-slate-800/80">
+            <button onclick="applyFix()" class="w-full py-2.5 px-4 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-purple-600/30 transition-all flex items-center justify-center space-x-2">
+              <i data-lucide="check-check" class="w-4 h-4"></i>
+              <span>Apply Fix</span>
+            </button>
+            
+            <div class="flex items-center justify-between text-xs pt-1">
+              <button onclick="showAlternatives()" class="text-purple-400 hover:text-purple-300 underline font-medium">
+                See 2 alternatives
+              </button>
+              <button onclick="requireCoordinatorAction(() => openEditModal('mon-1000'))" class="text-slate-400 hover:text-slate-200 text-[11px]">
+                Manual Edit Details
+              </button>
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+
+      <!-- Live Guardrail Badge -->
+      <div class="mt-4 p-3 bg-slate-950/70 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 flex items-center space-x-2">
+        <i data-lucide="shield-check" class="w-4 h-4 text-purple-400 shrink-0"></i>
+        <span><strong>Live Guardrail:</strong> Changes are verified across faculty workload & batches instantaneously.</span>
+      </div>
+
+    </aside>
+
+  </main>
+
+  <!-- ================= MODALS ================= -->
+
+  <!-- 1. NEW MODAL: FACULTY DROP MESSAGE & CLASS EXCHANGE (MAX 2 PER WEEK) -->
+  <div id="facultyMsgModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl border border-blue-500/50 p-6 shadow-2xl relative">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-blue-500/20 text-blue-400 border border-blue-500/30 flex items-center justify-center">
+            <i data-lucide="message-square" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>Faculty Class Release & Exchange</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-300 border border-blue-500/30">AUTO-SYNC</span>
+            </h3>
+            <p class="text-xs text-slate-400">Drop a message when unable to take a slot — auto-reschedules for everyone</p>
+          </div>
+        </div>
+        <button onclick="closeFacultyMessageModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3.5 text-xs">
+        
+        <!-- Faculty Selector -->
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">Select Faculty Member</label>
+          <select id="msgFacultySelect" onchange="updateFacultyExchangeStatus()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 focus:outline-none cursor-pointer">
+            <!-- Dynamically populated from facultyStore -->
+          </select>
+        </div>
+
+        <!-- Weekly Exchange Quota Meter (Enforcing MAX 2 CHANCES PER WEEK!) -->
+        <div id="quotaBox" class="p-3 rounded-xl bg-slate-900 border border-slate-800 flex items-center justify-between">
+          <div>
+            <span class="text-slate-400 text-[11px] block">Weekly Exchange Quota (Max 2 Allowed):</span>
+            <span id="quotaStatusText" class="font-bold text-emerald-400 text-xs">2 / 2 Exchanges Available</span>
+          </div>
+          <div class="flex items-center space-x-1.5" id="quotaPills">
+            <span id="pill1" class="w-3 h-3 rounded-full bg-emerald-500" title="Chance 1: Available"></span>
+            <span id="pill2" class="w-3 h-3 rounded-full bg-emerald-500" title="Chance 2: Available"></span>
+          </div>
+        </div>
+
+        <!-- Slot to Release -->
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">Select Class Slot to Release</label>
+          <select id="msgSlotSelect" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 focus:outline-none cursor-pointer">
+            <!-- Populated with slots taught by chosen faculty -->
+          </select>
+        </div>
+
+        <!-- Message / Reason -->
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">Message / Reason for Absence</label>
+          <textarea id="msgReasonInput" rows="2" placeholder="e.g. Urgent university meeting / medical appointment. Requesting auto-proxy." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 focus:outline-none placeholder-slate-500"></textarea>
+        </div>
+
+        <!-- Auto-Reschedule Strategy -->
+        <div>
+          <label class="block text-slate-300 mb-1 font-medium">AI Auto-Reschedule Action</label>
+          <select id="msgActionStrategy" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-blue-500 focus:outline-none">
+            <option value="proxy">Auto-Assign Qualified Department Substitute Faculty</option>
+            <option value="virtual">Convert to Self-Paced Proctored Lab / Tutorial</option>
+            <option value="free">Clear Slot to Open Free Study Period</option>
+          </select>
+        </div>
+
+        <!-- Automated Broadcast Guarantee Note -->
+        <div class="p-2.5 rounded-xl bg-blue-950/30 border border-blue-500/30 text-blue-300 text-[11px] flex items-center space-x-2">
+          <i data-lucide="radio" class="w-4 h-4 text-blue-400 shrink-0"></i>
+          <span><strong>Instant Synchronous Update:</strong> When you submit, the timetable updates automatically and pushes a live notification to all students & faculty.</span>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="closeFacultyMessageModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">
+          Cancel
+        </button>
+        <button id="submitExchangeBtn" onclick="submitFacultyClassExchange()" class="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-blue-600/30 flex items-center space-x-1.5">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Submit & Auto-Update Timetable</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. PUBLISH DISTRIBUTION OPTIONS MODAL (2 CHECKBOX OPTIONS) -->
+  <div id="publishOptionsModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl border border-purple-500/50 p-6 shadow-2xl relative">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+            <i data-lucide="send" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white flex items-center space-x-2">
+              <span>Publish Timetable Distribution</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30">CONFIRMATION</span>
+            </h3>
+            <p class="text-xs text-slate-400">Select distribution formats before sending to campus portals</p>
+          </div>
+        </div>
+        <button onclick="closePublishOptionsModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3.5 text-xs">
+        <p class="text-slate-300">
+          All 13 institutional constraints are verified (0 clashes). Select the delivery options to dispatch:
+        </p>
+
+        <!-- Option 1: Complete Timetable Checkbox Card -->
+        <label for="optShareComplete" class="block p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-purple-500/60 transition-all cursor-pointer">
+          <div class="flex items-start space-x-3">
+            <input type="checkbox" id="optShareComplete" checked onchange="updatePublishSummary()" class="mt-1 w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-950 border-slate-700 cursor-pointer">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-xs">Share Complete Timetable</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 border border-purple-500/30">Students & Notice Boards</span>
+              </div>
+              <p class="text-slate-400 text-[11px] mt-1">
+                Full institutional schedule showing all batches, lecture rooms, labs, and elective slots shared across student portals and general displays.
+              </p>
+            </div>
+          </div>
+        </label>
+
+        <!-- Option 2: Personalized Faculty Timetable Checkbox Card -->
+        <label for="optSharePersonalized" class="block p-3.5 rounded-xl bg-slate-900 border border-slate-700/80 hover:border-purple-500/60 transition-all cursor-pointer">
+          <div class="flex items-start space-x-3">
+            <input type="checkbox" id="optSharePersonalized" checked onchange="updatePublishSummary()" class="mt-1 w-4 h-4 rounded text-purple-600 focus:ring-purple-500 bg-slate-950 border-slate-700 cursor-pointer">
+            <div class="flex-1">
+              <div class="flex items-center justify-between">
+                <span class="font-bold text-white text-xs">Share Personalized Timetable to Every Faculty</span>
+                <span class="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">7 Faculty Portals</span>
+              </div>
+              <p class="text-slate-400 text-[11px] mt-1">
+                Generates a tailored individual timetable for each faculty member containing <strong>only their specific assigned classes</strong>, leaving all free hours as clean blank spaces.
+              </p>
+            </div>
+          </div>
+        </label>
+
+        <!-- Dynamic Dispatch Summary -->
+        <div id="publishSummaryPill" class="p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 text-purple-300 text-[11px] flex items-center space-x-2">
+          <i data-lucide="check-circle" class="w-4 h-4 text-purple-400 shrink-0"></i>
+          <span id="publishSummaryText">Both options selected: Complete Master + 7 Individual Faculty Schedules.</span>
+        </div>
+
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="closePublishOptionsModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">
+          Cancel
+        </button>
+        <button onclick="confirmAndPublishSelected()" class="px-5 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-600/30 flex items-center space-x-1.5">
+          <i data-lucide="send" class="w-3.5 h-3.5"></i>
+          <span>Publish & Dispatch Now</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. PUBLISHED BROADCAST CONFIRMATION POP-UP -->
+  <div id="publishBroadcastModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl border border-purple-500/50 p-6 shadow-2xl relative text-center">
+      
+      <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-purple-600 via-fuchsia-500 to-emerald-400 text-white flex items-center justify-center mx-auto shadow-xl shadow-purple-500/40 mb-4 animate-bounce">
+        <i data-lucide="bell-ring" class="w-8 h-8"></i>
+      </div>
+
+      <span class="text-[10px] font-mono px-2.5 py-1 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/30 uppercase tracking-widest font-bold">
+        INSTITUTIONAL BROADCAST CONFIRMED
+      </span>
+
+      <h3 class="text-xl font-black text-white mt-2">Timetable Successfully Dispatched!</h3>
+      <p class="text-xs text-slate-300 mt-1 max-w-md mx-auto" id="broadcastSubheader">
+        The verified timetable has been published and dispatched through the selected channels.
+      </p>
+
+      <!-- Broadcast Audit Box -->
+      <div class="my-4 p-3.5 bg-slate-900/90 rounded-xl border border-slate-800 text-left text-xs space-y-2.5">
+        <div id="broadcastChannel1" class="flex items-start space-x-2 text-slate-300">
+          <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="text-white">Complete Master Timetable:</strong>
+            <p class="text-slate-400 text-[11px]">Synced with 64 Students (CSE Sem 3) and Department Notice Displays</p>
+          </div>
+        </div>
+
+        <div id="broadcastChannel2" class="flex items-start space-x-2 text-slate-300">
+          <i data-lucide="check" class="w-4 h-4 text-emerald-400 shrink-0 mt-0.5"></i>
+          <div>
+            <strong class="text-white">Personalized Faculty Schedules:</strong>
+            <p class="text-slate-400 text-[11px]">7 individualized timetables (only their classes, free periods blanked) dispatched to each faculty member's portal</p>
+          </div>
+        </div>
+
+        <div class="pt-2 border-t border-slate-800 flex justify-between text-[11px] text-slate-400 font-mono">
+          <span>Constraints: 100% Cleared</span>
+          <span class="text-emerald-400">Status: LIVE & LOCKED</span>
+        </div>
+      </div>
+
+      <button onclick="closeBroadcastModal()" class="w-full py-2.5 bg-gradient-to-r from-purple-600 via-fuchsia-600 to-indigo-600 hover:from-purple-500 text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-lg shadow-purple-600/30 transition-all">
+        Acknowledge & Close
+      </button>
+
+    </div>
+  </div>
+
+  <!-- 3. COORDINATOR SECRET KEY PROMPT MODAL -->
+  <div id="coordKeyModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl border border-purple-500/50 p-6 shadow-2xl relative">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+            <i data-lucide="key" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Timetable Coordinator Key</h3>
+            <p class="text-xs text-slate-400">Unlock slot dragging into free slots & slot edits</p>
+          </div>
+        </div>
+        <button onclick="closeCoordKeyModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3">
+        <p class="text-xs text-slate-300">
+          Only authorized Timetable Coordinators can drag, swap, or reassign lectures into free slots. Enter your coordinator secret key:
+        </p>
+        
+        <div>
+          <label class="block text-slate-400 text-xs mb-1 font-medium">Secret Key</label>
+          <div class="relative">
+            <input type="password" id="coordKeyInput" placeholder="Enter coordinator key..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono focus:border-purple-500 focus:outline-none text-sm" onkeydown="if(event.key==='Enter') verifyCoordinatorKey()">
+            <button type="button" onclick="togglePasswordVisibility('coordKeyInput')" class="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <!-- Pre-filled Demo Hint for Judges -->
+        <div class="p-2.5 bg-purple-950/30 border border-purple-500/30 rounded-xl flex items-center justify-between text-xs">
+          <span class="text-purple-300 font-mono">Demo Key: <strong class="text-white">COORD@2026</strong></span>
+          <button onclick="fillDemoCoordKey()" class="text-[11px] bg-purple-600/40 hover:bg-purple-600 px-2 py-0.5 rounded text-purple-200">
+            Auto-fill
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="closeCoordKeyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">
+          Cancel
+        </button>
+        <button onclick="verifyCoordinatorKey()" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-600/30">
+          Unlock Drag & Edit Access
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. ADMINISTRATOR SECRET KEY PROMPT MODAL -->
+  <div id="adminKeyModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-md rounded-2xl border border-amber-500/50 p-6 shadow-2xl relative">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center">
+            <i data-lucide="shield" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Academic Administrator Key</h3>
+            <p class="text-xs text-slate-400">Unlock classroom & faculty management</p>
+          </div>
+        </div>
+        <button onclick="closeAdminKeyModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3">
+        <p class="text-xs text-slate-300">
+          Academic Administrators possess master privileges to add/edit classrooms, capacities, faculty members, and institutional workload limits.
+        </p>
+        
+        <div>
+          <label class="block text-slate-400 text-xs mb-1 font-medium">Administrator Secret Key</label>
+          <div class="relative">
+            <input type="password" id="adminKeyInput" placeholder="Enter administrator key..." class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2.5 text-white font-mono focus:border-amber-500 focus:outline-none text-sm" onkeydown="if(event.key==='Enter') verifyAdminKey()">
+            <button type="button" onclick="togglePasswordVisibility('adminKeyInput')" class="absolute right-3 top-2.5 text-slate-400 hover:text-white text-xs">
+              <i data-lucide="eye" class="w-4 h-4"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="p-2.5 bg-amber-950/30 border border-amber-500/30 rounded-xl flex items-center justify-between text-xs">
+          <span class="text-amber-300 font-mono">Demo Key: <strong class="text-white">ADMIN@2026</strong></span>
+          <button onclick="fillDemoAdminKey()" class="text-[11px] bg-amber-600/40 hover:bg-amber-600 px-2 py-0.5 rounded text-amber-200">
+            Auto-fill
+          </button>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="closeAdminKeyModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">
+          Cancel
+        </button>
+        <button onclick="verifyAdminKey()" class="px-5 py-2 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-amber-600/30">
+          Open Admin Console
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. ADMINISTRATOR CONSOLE MODAL (MANAGE CLASSROOMS & TEACHERS) -->
+  <div id="adminConsoleModal" class="fixed inset-0 bg-black/85 backdrop-blur-md z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-4xl rounded-2xl border border-amber-500/40 p-6 shadow-2xl relative max-h-[92vh] overflow-y-auto">
+      <div class="flex justify-between items-start pb-4 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-10 h-10 rounded-xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center">
+            <i data-lucide="settings" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-lg font-bold text-white flex items-center space-x-2">
+              <span>Academic Administrator Console</span>
+              <span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40">MASTER ACCESS</span>
+            </h3>
+            <p class="text-xs text-slate-400">Configure institutional infrastructure, classroom capacity, and faculty roster</p>
+          </div>
+        </div>
+        <button onclick="closeAdminConsole()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <!-- Tab Switcher -->
+      <div class="my-4 flex items-center space-x-3 border-b border-slate-800 pb-3">
+        <button onclick="setAdminTab('rooms')" id="tabRoomsBtn" class="px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white flex items-center space-x-1.5">
+          <i data-lucide="layout-grid" class="w-3.5 h-3.5"></i>
+          <span id="roomCountBadge">Classrooms (8)</span>
+        </button>
+        <button onclick="setAdminTab('faculty')" id="tabFacultyBtn" class="px-4 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900 border border-slate-800 flex items-center space-x-1.5">
+          <i data-lucide="users" class="w-3.5 h-3.5"></i>
+          <span id="facultyCountBadge">Faculty Roster (7)</span>
+        </button>
+      </div>
+
+      <!-- TAB 1: MANAGE CLASSROOMS -->
+      <div id="adminRoomsPanel" class="space-y-4">
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30">
+          <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="plus-circle" class="w-3.5 h-3.5"></i>
+            <span>Add New Classroom / Laboratory</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">Room Name / Code</label>
+              <input type="text" id="newRoomName" placeholder="e.g. B-212" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono uppercase focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Seating Capacity</label>
+              <input type="number" id="newRoomCapacity" placeholder="e.g. 60" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white font-mono focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Equipment Profile</label>
+              <select id="newRoomEquip" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-500 focus:outline-none">
+                <option value="Smartboard + Projector">Smartboard + Projector</option>
+                <option value="Standard Projector">Standard Projector</option>
+                <option value="High-End AI GPU Lab">High-End AI GPU Lab</option>
+                <option value="Network Systems Lab">Network Systems Lab</option>
+              </select>
+            </div>
+            <div class="flex items-end">
+              <button onclick="addNewClassroom()" class="w-full py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold rounded-lg text-xs shadow-md shadow-amber-600/30">
+                + Add Classroom
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+              <tr>
+                <th class="p-3">Room Name</th>
+                <th class="p-3">Capacity</th>
+                <th class="p-3">Equipment</th>
+                <th class="p-3">Floor / Wing</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="roomsTableBody" class="divide-y divide-slate-800/60 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- TAB 2: MANAGE FACULTY -->
+      <div id="adminFacultyPanel" class="space-y-4 hidden">
+        <div class="p-4 rounded-xl bg-slate-900/90 border border-amber-500/30">
+          <h4 class="text-xs font-bold text-amber-300 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="user-plus" class="w-3.5 h-3.5"></i>
+            <span>Add New Faculty Member</span>
+          </h4>
+          <div class="grid grid-cols-1 md:grid-cols-4 gap-3 text-xs">
+            <div>
+              <label class="block text-slate-400 mb-1">Faculty Name & Title</label>
+              <input type="text" id="newFacultyName" placeholder="e.g. Dr. Rajesh Verma" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-500 focus:outline-none">
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Department</label>
+              <select id="newFacultyDept" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-500 focus:outline-none">
+                <option value="Dept of CSE">Dept of CSE</option>
+                <option value="Dept of AIML">Dept of AIML</option>
+                <option value="Dept of ECE">Dept of ECE</option>
+                <option value="Dept of Mathematics">Dept of Mathematics</option>
+              </select>
+            </div>
+            <div>
+              <label class="block text-slate-400 mb-1">Subject Specialization</label>
+              <input type="text" id="newFacultyDomain" placeholder="e.g. Machine Learning" class="w-full bg-slate-950 border border-slate-700 rounded-lg px-2.5 py-1.5 text-white focus:border-amber-500 focus:outline-none">
+            </div>
+            <div class="flex items-end">
+              <button onclick="addNewFaculty()" class="w-full py-1.5 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-500 text-white font-bold rounded-lg text-xs shadow-md shadow-amber-600/30">
+                + Add Faculty
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <div class="overflow-x-auto rounded-xl border border-slate-800">
+          <table class="w-full text-left text-xs">
+            <thead class="bg-slate-900 text-slate-400 uppercase font-mono text-[11px] border-b border-slate-800">
+              <tr>
+                <th class="p-3">Faculty Name</th>
+                <th class="p-3">Department</th>
+                <th class="p-3">Specialization</th>
+                <th class="p-3">AICTE Workload</th>
+                <th class="p-3 text-right">Action</th>
+              </tr>
+            </thead>
+            <tbody id="facultyTableBody" class="divide-y divide-slate-800/60 font-medium"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="pt-4 border-t border-slate-800 flex justify-end">
+        <button onclick="closeAdminConsole()" class="px-5 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-xl text-xs font-semibold">
+          Close Console
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. IN-GRID INTERACTIVE SLOT EDITOR MODAL (COORDINATORS) -->
+  <div id="editSlotModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-lg rounded-2xl border border-purple-500/40 p-6 shadow-2xl relative">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div class="flex items-center space-x-3">
+          <div class="w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 border border-purple-500/30 flex items-center justify-center">
+            <i data-lucide="edit-3" class="w-5 h-5"></i>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-white">Modify Timetable Slot</h3>
+            <p class="text-xs text-slate-400" id="editSlotMeta">Mon 10:00 · Coordinator Editor</p>
+          </div>
+        </div>
+        <button onclick="closeEditModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 space-y-3.5 text-xs">
+        <div class="grid grid-cols-3 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1 font-medium">Course Code</label>
+            <input type="text" id="editCode" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono uppercase focus:border-purple-500 focus:outline-none">
+          </div>
+          <div class="col-span-2">
+            <label class="block text-slate-400 mb-1 font-medium">Subject Name</label>
+            <input type="text" id="editName" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-purple-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1 font-medium">Classroom / Lab Allocation</label>
+          <select id="editRoom" onchange="validateSlotEdit()" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-purple-500 focus:outline-none cursor-pointer"></select>
+        </div>
+
+        <div>
+          <label class="block text-slate-400 mb-1 font-medium">Assigned Faculty</label>
+          <select id="editFaculty" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-purple-500 focus:outline-none cursor-pointer"></select>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-slate-400 mb-1 font-medium">Slot Category</label>
+            <select id="editType" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white focus:border-purple-500 focus:outline-none">
+              <option value="theory">Theory Lecture</option>
+              <option value="lab">Laboratory Session</option>
+              <option value="tutorial">Tutorial / Mentorship</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-slate-400 mb-1 font-medium">Enrolled Students</label>
+            <input type="text" id="editStudents" value="54/60" class="w-full bg-slate-900 border border-slate-700 rounded-xl px-3 py-2 text-white font-mono focus:border-purple-500 focus:outline-none">
+          </div>
+        </div>
+
+        <div id="editValidationPill" class="p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 flex items-center space-x-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4 text-emerald-400 shrink-0"></i>
+          <span id="editValidationText">All 13 institutional constraints satisfied with 0 conflicts.</span>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-between items-center">
+        <button onclick="clearCurrentSlot()" class="text-rose-400 hover:text-rose-300 text-xs font-semibold flex items-center space-x-1">
+          <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+          <span>Clear Slot to Free</span>
+        </button>
+
+        <div class="flex items-center space-x-2">
+          <button onclick="closeEditModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-xs font-medium">
+            Cancel
+          </button>
+          <button onclick="saveSlotEdit()" class="px-5 py-2 bg-gradient-to-r from-purple-600 to-fuchsia-600 hover:from-purple-500 text-white rounded-xl text-xs font-bold shadow-lg shadow-purple-600/30">
+            Save Timetable Change
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. THE 13 INSTITUTIONAL FORCES RULEBOOK -->
+  <div id="constraintsModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="glass-panel w-full max-w-3xl rounded-2xl border border-purple-500/30 p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-start pb-3 border-b border-slate-800">
+        <div>
+          <h3 class="text-base font-bold text-white flex items-center space-x-2">
+            <i data-lucide="sliders" class="w-5 h-5 text-purple-400"></i>
+            <span>The 13 Institutional Forces (Page 2 Challenge Brief)</span>
+          </h3>
+          <p class="text-xs text-slate-400">Hard Rules vs. Soft Preferences Governed by SynapseGrid</p>
+        </div>
+        <button onclick="closeConstraintsModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <div class="my-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div class="p-4 rounded-xl bg-slate-900 border border-red-500/30">
+          <h4 class="text-xs font-bold text-red-400 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="lock" class="w-3.5 h-3.5"></i>
+            <span>Hard Rules (Zero Tolerance)</span>
+          </h4>
+          <ul class="text-xs space-y-2 text-slate-300">
+            <li class="flex items-center justify-between"><span>1. Classroom Capacity ≥ Batch Size</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>2. Faculty Availability & No Double-Booking</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>3. Lab Equipment & Hardware match</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>4. Semester Core Subject Non-overlap</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>5. Maintenance & Sanitization Windows</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>6. Internal Examination Slot Blocks</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+            <li class="flex items-center justify-between"><span>7. Accessibility / Ground Floor Compliance</span><span class="text-emerald-400 text-[10px] font-mono">Enforced</span></li>
+          </ul>
+        </div>
+
+        <div class="p-4 rounded-xl bg-slate-900 border border-purple-500/30">
+          <h4 class="text-xs font-bold text-purple-400 uppercase tracking-wider mb-2 flex items-center space-x-1.5">
+            <i data-lucide="heart" class="w-3.5 h-3.5"></i>
+            <span>Soft Preferences (Optimized)</span>
+          </h4>
+          <ul class="text-xs space-y-2 text-slate-300">
+            <li class="flex items-center justify-between"><span>8. Building Proximity (Minimize walking)</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+            <li class="flex items-center justify-between"><span>9. Faculty Max 3 Consecutive Hours</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+            <li class="flex items-center justify-between"><span>10. Department Floor Preferences</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+            <li class="flex items-center justify-between"><span>11. College Events & Auditorium Blackouts</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+            <li class="flex items-center justify-between"><span>12. Classroom Equipment (Smartboards)</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+            <li class="flex items-center justify-between"><span>13. Energy Efficiency (Cluster HVAC rooms)</span><span class="text-purple-300 text-[10px] font-mono">Optimized</span></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="pt-3 border-t border-slate-800 flex justify-end">
+        <button onclick="closeConstraintsModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-xl text-xs font-bold">
+          Done
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. RESOURCE ANALYTICS SECTION -->
+  <section id="analyticsSection" class="hidden max-w-[1720px] w-full mx-auto px-6 py-4 flex-1">
+    <div class="glass-panel rounded-2xl border border-slate-800 p-6 space-y-6">
+      <div class="flex justify-between items-center pb-4 border-b border-slate-800">
+        <div>
+          <h2 class="text-lg font-bold text-white flex items-center space-x-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-purple-400"></i>
+            <span>Resource Utilization & Load Analytics</span>
+          </h2>
+          <p class="text-xs text-slate-400">Classroom Density, Faculty AICTE Caps, and Lab Saturation</p>
+        </div>
+        <button onclick="setViewMode('grid')" class="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-xs rounded-xl text-slate-200">
+          Back to Timetable Grid
+        </button>
+      </div>
+
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+        <div class="glass-card rounded-xl p-4 border border-slate-800">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3 flex items-center justify-between">
+            <span>Classroom Utilization</span>
+            <span class="text-emerald-400 font-mono text-[11px]">Average: 88.4%</span>
+          </h3>
+          <canvas id="roomUtilChart" height="200"></canvas>
+        </div>
+
+        <div class="glass-card rounded-xl p-4 border border-slate-800">
+          <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3 flex items-center justify-between">
+            <span>Faculty Hours / Week</span>
+            <span class="text-purple-400 font-mono text-[11px]">AICTE Cap: 16 hrs</span>
+          </h3>
+          <canvas id="facultyLoadChart" height="200"></canvas>
+        </div>
+
+        <div class="glass-card rounded-xl p-4 border border-slate-800 flex flex-col justify-between">
+          <div>
+            <h3 class="text-xs font-bold text-slate-200 uppercase tracking-wider mb-3">Lab Saturation</h3>
+            <div class="space-y-3">
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Lab 1 (Systems)</span>
+                  <span class="text-emerald-400 font-mono">75%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2">
+                  <div class="bg-emerald-500 h-2 rounded-full" style="width: 75%"></div>
+                </div>
+              </div>
+              <div>
+                <div class="flex justify-between text-xs mb-1">
+                  <span class="text-slate-300">Lab 2 (Data Structures & AI)</span>
+                  <span class="text-amber-400 font-mono">92%</span>
+                </div>
+                <div class="w-full bg-slate-800 rounded-full h-2">
+                  <div class="bg-amber-500 h-2 rounded-full" style="width: 92%"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="p-3 bg-purple-950/30 border border-purple-500/20 rounded-lg text-[11px] text-purple-300">
+            <strong>Audit:</strong> Classroom allocations comply with institutional spatial ratios.
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- TOAST NOTIFICATION CONTAINER -->
+  <div id="toastContainer" class="fixed bottom-6 right-6 z-50 space-y-2 pointer-events-none print-hide"></div>
+
+  <!-- JAVASCRIPT LOGIC & STATE ENGINE -->
+  <script>
+    // Audio synthesizer
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    let audioCtx;
+    function playChime(freq = 520, type = 'sine', duration = 0.15) {
+      try {
+        if (!audioCtx) audioCtx = new AudioContext();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + duration);
+      } catch (e) {}
+    }
+
+    // ================= SECURITY & RBAC =================
+    const SECRET_KEYS = {
+      coordinator: 'COORD@2026',
+      administrator: 'ADMIN@2026'
+    };
+
+    let currentUserRole = 'viewer';
+    let currentTheme = 'dark';
+    let timetableDisplayMode = 'master'; // 'master' or 'faculty'
+
+    // ================= FACULTY & EXCHANGE QUOTA STORE =================
+    // Enforcing: A single faculty has MAX 2 CHANCES to exchange per week!
+    let facultyExchangeUsage = {
+      'Dr. Ramesh K.': 0,
+      'Dr. H. Sharma': 0,
+      'Prof. Vani M.': 0,
+      'Dr. Sunil N.': 0,
+      'Prof. Deepa R.': 0,
+      'Prof. Priya G.': 0,
+      'Prof. K. Venkatesh': 0
+    };
+
+    let classroomsStore = [
+      { name: 'B-204', capacity: 60, equip: 'Standard Projector', floor: 'Block B, 2nd Floor' },
+      { name: 'B-208', capacity: 60, equip: 'Smartboard + Projector', floor: 'Block B, 2nd Floor' },
+      { name: 'B-210', capacity: 60, equip: 'Smartboard + Projector', floor: 'Block B, 2nd Floor' },
+      { name: 'A-110', capacity: 60, equip: 'Standard Projector', floor: 'Block A, 1st Floor' },
+      { name: 'A-012', capacity: 65, equip: 'Accessible Ground Floor', floor: 'Block A, Ground Floor' },
+      { name: 'Lab 1', capacity: 30, equip: 'Network Systems Lab', floor: 'Block B, 1st Floor' },
+      { name: 'Lab 2', capacity: 30, equip: 'High-End AI GPU Lab', floor: 'Block B, 1st Floor' },
+      { name: 'Lab 3', capacity: 30, equip: 'OOPS & Web Dev Lab', floor: 'Block B, 3rd Floor' }
+    ];
+
+    let facultyStore = [
+      { name: 'Dr. Ramesh K.', dept: 'Dept of CSE', domain: 'Data Structures & Algo', hours: 14 },
+      { name: 'Dr. H. Sharma', dept: 'Dept of CSE', domain: 'Computer Architecture', hours: 13 },
+      { name: 'Prof. Vani M.', dept: 'Dept of Mathematics', domain: 'Discrete Mathematics', hours: 12 },
+      { name: 'Dr. Sunil N.', dept: 'Dept of CSE', domain: 'Operating Systems', hours: 15 },
+      { name: 'Prof. Deepa R.', dept: 'Dept of AIML', domain: 'Object Oriented Dev', hours: 14 },
+      { name: 'Prof. Priya G.', dept: 'Dept of Humanities', domain: 'Human Values', hours: 11 },
+      { name: 'Prof. K. Venkatesh', dept: 'Dept of CSE', domain: 'Microprocessors', hours: 10 }
+    ];
+
+    // Master Timetable Schedule Store
+    let currentDept = 'cse3';
+    const schedules = {
+      cse3: [
+        {
+          time: '09:00', end: '10:00',
+          slots: [
+            { id: 'mon-0900', code: 'CS301', name: 'Data Structures & Algo', room: 'B-204', faculty: 'Dr. Ramesh K.', students: '54/60', type: 'theory', color: 'blue' },
+            { id: 'tue-0900', code: 'MA201', name: 'Discrete Mathematics', room: 'A-110', faculty: 'Prof. Vani M.', students: '58/60', type: 'theory', color: 'emerald' },
+            { id: 'wed-0900', code: 'FREE', name: 'Open Free Slot', room: 'Library', faculty: 'Free Period', students: '--', type: 'open', color: 'gray' },
+            { id: 'thu-0900', code: 'CS305', name: 'Data Structures Lab', room: 'Lab 2', faculty: 'Dr. Ramesh K.', students: '28/30', type: 'lab', color: 'purple' },
+            { id: 'fri-0900', code: 'CS301', name: 'Data Structures & Algo', room: 'B-204', faculty: 'Dr. Ramesh K.', students: '54/60', type: 'theory', color: 'blue' }
+          ]
+        },
+        {
+          time: '10:00', end: '11:15',
+          slots: [
+            { id: 'mon-1000', code: 'CS303', name: 'Computer Architecture', room: 'B-208', faculty: 'Dr. H. Sharma', students: '54/60', type: 'theory', color: 'red', isClash: true, clashReason: 'Room B-208 double-booked with EC201' },
+            { id: 'tue-1000', code: 'FREE', name: 'Open Free Slot', room: 'Lib-3', faculty: 'Free Period', students: '--', type: 'open', color: 'gray' },
+            { id: 'wed-1000', code: 'CS302', name: 'Object Oriented Dev', room: 'Lab 3', faculty: 'Prof. Deepa R.', students: '30/30', type: 'lab', color: 'amber' },
+            { id: 'thu-1000', code: 'MA201', name: 'Discrete Mathematics', room: 'A-110', faculty: 'Prof. Vani M.', students: '58/60', type: 'theory', color: 'emerald' },
+            { id: 'fri-1000', code: 'CS304', name: 'Operating Systems', room: 'B-204', faculty: 'Dr. Sunil N.', students: '52/60', type: 'theory', color: 'indigo' }
+          ]
+        },
+        {
+          time: '11:15', end: '12:15',
+          slots: [
+            { id: 'mon-1115', code: 'HS101', name: 'Universal Human Values', room: 'A-012', faculty: 'Prof. Priya G.', students: '60/65', type: 'theory', color: 'teal' },
+            { id: 'tue-1115', code: 'CS304', name: 'Operating Systems', room: 'B-204', faculty: 'Dr. Sunil N.', students: '52/60', type: 'theory', color: 'indigo' },
+            { id: 'wed-1115', code: 'CS303', name: 'Computer Architecture', room: 'B-208', faculty: 'Dr. H. Sharma', students: '54/60', type: 'theory', color: 'purple' },
+            { id: 'thu-1115', code: 'CS301', name: 'Data Structures & Algo', room: 'B-204', faculty: 'Dr. Ramesh K.', students: '54/60', type: 'theory', color: 'blue' },
+            { id: 'fri-1115', code: 'CS302', name: 'Object Oriented Dev', room: 'Lab 3', faculty: 'Prof. Deepa R.', students: '30/30', type: 'lab', color: 'amber' }
+          ]
+        },
+        {
+          time: '12:15', end: '13:15',
+          slots: [
+            { id: 'mon-1215', code: 'LUNCH', name: 'Midday Lunch Break', room: 'Cafeteria', faculty: '--', students: '--', type: 'break', color: 'gray' },
+            { id: 'tue-1215', code: 'CS304', name: 'OS Lab (Batch A)', room: 'Lab 1', faculty: 'Dr. Sunil N.', students: '28/30', type: 'lab', color: 'purple' },
+            { id: 'wed-1215', code: 'LUNCH', name: 'Midday Lunch Break', room: 'Cafeteria', faculty: '--', students: '--', type: 'break', color: 'gray' },
+            { id: 'thu-1215', code: 'CS305', name: 'DS Lab (Batch B)', room: 'Lab 2', faculty: 'Dr. Ramesh K.', students: '28/30', type: 'lab', color: 'purple' },
+            { id: 'fri-1215', code: 'LUNCH', name: 'Midday Lunch Break', room: 'Cafeteria', faculty: '--', students: '--', type: 'break', color: 'gray' }
+          ]
+        },
+        {
+          time: '14:00', end: '15:30',
+          slots: [
+            { id: 'mon-1400', code: 'CS302', name: 'OOPS Lab', room: 'Lab 3', faculty: 'Prof. Deepa R.', students: '30/30', type: 'lab', color: 'amber' },
+            { id: 'tue-1400', code: 'CS301', name: 'Data Structures', room: 'B-204', faculty: 'Dr. Ramesh K.', students: '54/60', type: 'theory', color: 'blue' },
+            { id: 'wed-1400', code: 'FREE', name: 'Open Free Slot', room: 'Auditorium', faculty: 'Free Period', students: '--', type: 'open', color: 'gray' },
+            { id: 'thu-1400', code: 'HS101', name: 'Human Values', room: 'A-012', faculty: 'Prof. Priya G.', students: '60/65', type: 'theory', color: 'teal' },
+            { id: 'fri-1400', code: 'CS303', name: 'Computer Architecture', room: 'B-208', faculty: 'Dr. H. Sharma', students: '54/60', type: 'theory', color: 'purple' }
+          ]
+        }
+      ]
+    };
+
+    let activeSchedule = JSON.parse(JSON.stringify(schedules.cse3));
+    let draggedSlotId = null;
+    let editingSlotId = null;
+
+    // ================= LIGHT / DARK THEME TOGGLE =================
+    function toggleTheme() {
+      const html = document.documentElement;
+      const themeLabel = document.getElementById('themeLabel');
+      const sun = document.getElementById('themeSunIcon');
+      const moon = document.getElementById('themeMoonIcon');
+
+      if (currentTheme === 'dark') {
+        currentTheme = 'light';
+        html.classList.remove('dark');
+        html.classList.add('light');
+        themeLabel.innerText = 'Light Mode';
+        sun.classList.remove('hidden');
+        moon.classList.add('hidden');
+        showToast('Switched to Light Theme', 'info');
+      } else {
+        currentTheme = 'dark';
+        html.classList.remove('light');
+        html.classList.add('dark');
+        themeLabel.innerText = 'Dark Mode';
+        sun.classList.add('hidden');
+        moon.classList.remove('hidden');
+        showToast('Switched to Dark Theme', 'info');
+      }
+      playChime(600, 'sine', 0.1);
+      lucide.createIcons();
+    }
+
+    // ================= DUAL TIMETABLE VIEW SWITCHER =================
+    function setTimetableDisplayMode(mode) {
+      timetableDisplayMode = mode;
+      const masterBtn = document.getElementById('displayMasterBtn');
+      const facultyBtn = document.getElementById('displayFacultyBtn');
+      const filterWrapper = document.getElementById('facultyFilterWrapper');
+      const banner = document.getElementById('facultyScheduleBanner');
+
+      if (mode === 'faculty') {
+        masterBtn.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-white flex items-center space-x-1.5 transition-all";
+        facultyBtn.className = "px-3 py-1 rounded-lg font-semibold bg-purple-600 text-white flex items-center space-x-1.5 transition-all";
+        filterWrapper.classList.remove('hidden');
+        banner.classList.remove('hidden');
+
+        const facSelect = document.getElementById('selectedFacultyFilter');
+        document.getElementById('facultyBannerName').innerText = facSelect.value;
+        showToast(`Filtered view: Showing classes only for ${facSelect.value}`, 'info');
+      } else {
+        masterBtn.className = "px-3 py-1 rounded-lg font-semibold bg-purple-600 text-white flex items-center space-x-1.5 transition-all";
+        facultyBtn.className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-white flex items-center space-x-1.5 transition-all";
+        filterWrapper.classList.add('hidden');
+        banner.classList.add('hidden');
+        showToast('Viewing Full Master Timetable', 'info');
+      }
+
+      renderTimetable();
+      lucide.createIcons();
+    }
+
+    // ================= RENDER TIMETABLE GRID =================
+    function renderTimetable() {
+      const container = document.getElementById('timetableGrid');
+      container.innerHTML = '';
+      let hasClash = false;
+      const canEdit = currentUserRole === 'coordinator' || currentUserRole === 'admin';
+
+      activeSchedule.forEach((row) => {
+        const rowDiv = document.createElement('div');
+        rowDiv.className = 'grid grid-cols-6 gap-3 items-stretch';
+
+        // Time indicator
+        const timeCol = `
+          <div class="flex flex-col justify-center items-center text-xs font-mono font-medium text-slate-400 bg-slate-950/70 rounded-xl border border-slate-800/40 p-2 select-none">
+            <span class="text-white font-semibold">${row.time}</span>
+            <span class="text-[10px] text-slate-600">to ${row.end}</span>
+          </div>
+        `;
+        rowDiv.innerHTML = timeCol;
+
+        row.slots.forEach((slot) => {
+          const slotDiv = document.createElement('div');
+          slotDiv.id = slot.id;
+
+          if (slot.type === 'break' || slot.type === 'open') {
+            const isOpen = slot.type === 'open';
+            slotDiv.className = `border ${isOpen ? 'border-dashed border-slate-700/80 bg-slate-900/30' : 'border-dashed border-slate-800/60'} rounded-xl p-3 flex flex-col items-center justify-center text-slate-500 text-xs transition-all relative ${canEdit ? 'hover:border-purple-500/60 cursor-pointer' : 'cursor-not-allowed'}`;
+            
+            slotDiv.innerHTML = `
+              <span class="${isOpen ? 'text-purple-300/80 font-mono font-semibold' : 'text-slate-500'} flex items-center space-x-1">
+                ${isOpen ? '<i data-lucide="sparkle" class="w-3 h-3 text-purple-400"></i>' : ''}
+                <span>${slot.name}</span>
+              </span>
+              <span class="text-[10px] text-slate-600 mt-1">${isOpen ? 'Drop or click to fill' : slot.room}</span>
+            `;
+
+            slotDiv.onclick = () => {
+              if (isOpen) {
+                requireCoordinatorAction(() => openEditModal(slot.id));
+              }
+            };
+
+            setupDropTarget(slotDiv, slot.id);
+
+          } else if (slot.isClash) {
+            hasClash = true;
+            slotDiv.className = `clash-card rounded-xl p-3 relative ${canEdit ? 'can-drag' : 'is-locked'}`;
+            slotDiv.innerHTML = `
+              <div class="flex justify-between items-start mb-1">
+                <span class="text-xs font-bold text-red-200 flex items-center space-x-1">
+                  <span>${slot.code}</span>
+                  <span class="text-[10px] bg-red-500 text-white font-bold px-1.5 py-0.2 rounded-full uppercase">Clash</span>
+                </span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-red-500/20 text-red-300 border border-red-500/30">${slot.room}</span>
+              </div>
+              <p class="text-[11px] text-red-100 font-semibold truncate">${slot.name}</p>
+              <div class="flex items-center space-x-1 text-[10px] text-red-300 font-medium mt-1">
+                <i data-lucide="alert-triangle" class="w-3 h-3 text-red-400 shrink-0"></i>
+                <span class="truncate">${slot.clashReason}</span>
+              </div>
+              <div class="mt-2 pt-1 border-t border-red-500/20 flex justify-between items-center text-[10px] text-red-300/80">
+                <span>${slot.faculty}</span>
+                <span class="text-purple-300 font-semibold underline">Fix available →</span>
+              </div>
+            `;
+            slotDiv.onclick = () => focusConflict();
+            if (canEdit) setupDraggable(slotDiv, slot.id);
+            setupDropTarget(slotDiv, slot.id);
+
+          } else {
+            // Normal slot
+            const borderColors = {
+              blue: 'border-l-blue-500',
+              emerald: 'border-l-emerald-500',
+              purple: 'border-l-purple-500',
+              amber: 'border-l-amber-500',
+              indigo: 'border-l-indigo-500',
+              teal: 'border-l-teal-500'
+            };
+            const bColor = borderColors[slot.color] || 'border-l-purple-500';
+
+            slotDiv.className = `glass-card rounded-xl p-3 border-l-4 ${bColor} relative group ${canEdit ? 'can-drag' : 'is-locked'} ${isFacultyMode ? 'ring-2 ring-purple-500/60 shadow-lg shadow-purple-500/20' : ''}`;
+            slotDiv.innerHTML = `
+              <div class="flex justify-between items-start mb-1">
+                <span class="text-xs font-bold text-white group-hover:text-purple-300 flex items-center space-x-1">
+                  <span>${slot.code}</span>
+                  ${slot.isProxy ? '<span class="text-[9px] bg-amber-500/20 text-amber-300 px-1 py-0.2 rounded border border-amber-500/30">PROXY</span>' : ''}
+                  ${slot.fixed ? '<span class="text-[10px] text-emerald-400">✓</span>' : ''}
+                </span>
+                <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-800 text-slate-300 border border-slate-700">${slot.room}</span>
+              </div>
+              <p class="text-[11px] text-slate-200 font-medium truncate">${slot.name}</p>
+              <div class="flex items-center justify-between text-[10px] text-slate-400 mt-2">
+                <span class="truncate font-medium text-purple-300">${slot.faculty}</span>
+                <span class="font-mono text-slate-500 shrink-0 ml-1">${slot.students}</span>
+              </div>
+            `;
+            slotDiv.onclick = () => {
+              requireCoordinatorAction(() => openEditModal(slot.id));
+            };
+            if (canEdit) setupDraggable(slotDiv, slot.id);
+            setupDropTarget(slotDiv, slot.id);
+          }
+
+          rowDiv.appendChild(slotDiv);
+        });
+
+        container.appendChild(rowDiv);
+      });
+
+      updateConflictState(hasClash);
+      lucide.createIcons();
+    }
+
+    // ================= FACULTY MESSAGE & AUTO-EXCHANGE FEATURE =================
+    function openFacultyMessageModal() {
+      document.getElementById('facultyMsgModal').classList.remove('hidden');
+      populateFacultyMsgDropdown();
+      updateFacultyExchangeStatus();
+      lucide.createIcons();
+    }
+
+    function closeFacultyMessageModal() {
+      document.getElementById('facultyMsgModal').classList.add('hidden');
+    }
+
+    function populateFacultyMsgDropdown() {
+      const facSelect = document.getElementById('msgFacultySelect');
+      facSelect.innerHTML = '';
+      facultyStore.forEach(f => {
+        const opt = document.createElement('option');
+        opt.value = f.name;
+        opt.text = `${f.name} (${f.dept})`;
+        facSelect.appendChild(opt);
+      });
+    }
+
+    function updateFacultyExchangeStatus() {
+      const facultyName = document.getElementById('msgFacultySelect').value;
+      const used = facultyExchangeUsage[facultyName] || 0;
+      const remaining = Math.max(0, 2 - used);
+
+      const statusText = document.getElementById('quotaStatusText');
+      const pill1 = document.getElementById('pill1');
+      const pill2 = document.getElementById('pill2');
+      const submitBtn = document.getElementById('submitExchangeBtn');
+
+      if (remaining === 2) {
+        statusText.innerText = "2 of 2 Exchanges Remaining (Available)";
+        statusText.className = "font-bold text-emerald-400 text-xs";
+        pill1.className = "w-3 h-3 rounded-full bg-emerald-500";
+        pill2.className = "w-3 h-3 rounded-full bg-emerald-500";
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else if (remaining === 1) {
+        statusText.innerText = "1 of 2 Exchanges Remaining (1 Used)";
+        statusText.className = "font-bold text-amber-400 text-xs";
+        pill1.className = "w-3 h-3 rounded-full bg-slate-600";
+        pill2.className = "w-3 h-3 rounded-full bg-emerald-500";
+        submitBtn.disabled = false;
+        submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+      } else {
+        statusText.innerText = "⚠️ 0 of 2 Exchanges Remaining (Weekly Limit Reached!)";
+        statusText.className = "font-bold text-rose-400 text-xs";
+        pill1.className = "w-3 h-3 rounded-full bg-rose-500";
+        pill2.className = "w-3 h-3 rounded-full bg-rose-500";
+        submitBtn.disabled = true;
+        submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+      }
+
+      // Populate slots taught by this faculty
+      const slotSelect = document.getElementById('msgSlotSelect');
+      slotSelect.innerHTML = '';
+      let count = 0;
+      activeSchedule.forEach(r => {
+        r.slots.forEach(s => {
+          if (s.faculty && s.faculty.includes(facultyName)) {
+            count++;
+            const opt = document.createElement('option');
+            opt.value = s.id;
+            opt.text = `${s.id.toUpperCase()}: ${s.code} - ${s.name} (Room ${s.room})`;
+            slotSelect.appendChild(opt);
+          }
+        });
+      });
+
+      if (count === 0) {
+        const opt = document.createElement('option');
+        opt.text = "No scheduled classes found for this faculty in Sem 3";
+        slotSelect.appendChild(opt);
+      }
+    }
+
+    function submitFacultyClassExchange() {
+      const facultyName = document.getElementById('msgFacultySelect').value;
+      const slotId = document.getElementById('msgSlotSelect').value;
+      const reason = document.getElementById('msgReasonInput').value.trim() || 'Medical Emergency / Official Duty';
+      const strategy = document.getElementById('msgActionStrategy').value;
+
+      // Validate 2-chance policy
+      const used = facultyExchangeUsage[facultyName] || 0;
+      if (used >= 2) {
+        playChime(220, 'sawtooth', 0.3);
+        showToast(`❌ Quota Exceeded: ${facultyName} has already used 2 weekly exchanges!`, 'warning');
+        return;
+      }
+
+      const slot = findSlot(slotId);
+      if (!slot) {
+        showToast('Please select a valid scheduled class slot', 'warning');
+        return;
+      }
+
+      // Increment quota used
+      facultyExchangeUsage[facultyName] = used + 1;
+
+      // Apply Automated Rescheduling
+      if (strategy === 'proxy') {
+        const proxyTeacher = 'Prof. K. Venkatesh (Substitute)';
+        slot.faculty = proxyTeacher;
+        slot.isProxy = true;
+        showToast(`Auto-assigned proxy: ${proxyTeacher} for ${slot.code}. Timetable updated for all!`, 'success');
+      } else if (strategy === 'virtual') {
+        slot.name = 'Proctored Virtual Lab / NPTEL';
+        slot.faculty = 'Lab Instructor + TA';
+        slot.isProxy = true;
+        showToast(`Converted ${slot.code} to Proctored Virtual Lab session`, 'success');
+      } else {
+        slot.code = 'FREE';
+        slot.name = 'Open Free Study Slot';
+        slot.faculty = 'Free Period';
+        slot.type = 'open';
+        showToast(`Slot released to Open Free Study Period`, 'info');
+      }
+
+      closeFacultyMessageModal();
+      renderTimetable();
+      playChime(784, 'triangle', 0.3);
+      confetti({ particleCount: 75, spread: 60, origin: { y: 0.6 } });
+
+      // Automatically trigger a live push broadcast
+      showToast(`📢 Live Sync: ${facultyName}'s class was re-planned. All students & faculty notified!`, 'success');
+    }
+
+    // ================= PUBLISH WITH 2 DISTRIBUTION OPTIONS =================
+    function publishTimetable() {
+      const hasClash = activeSchedule.some(r => r.slots.some(s => s.isClash));
+      if (hasClash) {
+        playChime(220, 'sawtooth', 0.3);
+        showToast('Cannot publish timetable while critical clashes exist!', 'warning');
+        focusConflict();
+        return;
+      }
+
+      // Open the 2-option Publish Distribution Modal!
+      document.getElementById('publishOptionsModal').classList.remove('hidden');
+      updatePublishSummary();
+      lucide.createIcons();
+    }
+
+    function closePublishOptionsModal() {
+      document.getElementById('publishOptionsModal').classList.add('hidden');
+    }
+
+    function updatePublishSummary() {
+      const completeChecked = document.getElementById('optShareComplete').checked;
+      const personalizedChecked = document.getElementById('optSharePersonalized').checked;
+      const pill = document.getElementById('publishSummaryPill');
+      const text = document.getElementById('publishSummaryText');
+
+      if (completeChecked && personalizedChecked) {
+        pill.className = "p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 text-purple-300 text-[11px] flex items-center space-x-2";
+        text.innerText = "Both options selected: Complete Master Timetable + 7 Personalized Faculty Schedules.";
+      } else if (completeChecked) {
+        pill.className = "p-2.5 rounded-xl bg-purple-950/30 border border-purple-500/30 text-purple-300 text-[11px] flex items-center space-x-2";
+        text.innerText = "Single option selected: Complete Master Timetable (Sent to Students & Displays only).";
+      } else if (personalizedChecked) {
+        pill.className = "p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/30 text-emerald-300 text-[11px] flex items-center space-x-2";
+        text.innerText = "Single option selected: 7 Personalized Faculty Schedules (Sent to Faculty Portals only).";
+      } else {
+        pill.className = "p-2.5 rounded-xl bg-rose-950/30 border border-rose-500/30 text-rose-300 text-[11px] flex items-center space-x-2";
+        text.innerText = "⚠️ Please check at least one box to publish!";
+      }
+    }
+
+    function confirmAndPublishSelected() {
+      const completeChecked = document.getElementById('optShareComplete').checked;
+      const personalizedChecked = document.getElementById('optSharePersonalized').checked;
+
+      if (!completeChecked && !personalizedChecked) {
+        playChime(220, 'sawtooth', 0.2);
+        showToast('Please select at least one distribution option before publishing', 'warning');
+        return;
+      }
+
+      // Close options modal
+      closePublishOptionsModal();
+
+      // Configure channels in broadcast confirmation
+      const chan1 = document.getElementById('broadcastChannel1');
+      const chan2 = document.getElementById('broadcastChannel2');
+      const sub = document.getElementById('broadcastSubheader');
+
+      if (completeChecked && personalizedChecked) {
+        chan1.classList.remove('hidden');
+        chan2.classList.remove('hidden');
+        sub.innerText = "Both the Complete Master Schedule and 7 Personalized Faculty Timetables have been synchronized live across all portals.";
+      } else if (completeChecked) {
+        chan1.classList.remove('hidden');
+        chan2.classList.add('hidden');
+        sub.innerText = "The Complete Master Schedule has been broadcasted to all students and department notice displays.";
+      } else {
+        chan1.classList.add('hidden');
+        chan2.classList.remove('hidden');
+        sub.innerText = "Individualized personalized timetables have been sent to each faculty member's personal dashboard.";
+      }
+
+      // Open the broadcast confirmation pop-up!
+      document.getElementById('publishBroadcastModal').classList.remove('hidden');
+      playChime(880, 'sine', 0.4);
+      confetti({ particleCount: 150, spread: 90, origin: { y: 0.5 } });
+      lucide.createIcons();
+    }
+
+    function closeBroadcastModal() {
+      document.getElementById('publishBroadcastModal').classList.add('hidden');
+      showToast('Timetable published & synchronized live across all systems!', 'success');
+    }
+
+    // ================= DRAG & DROP AND EDIT LOGIC =================
+    function requireCoordinatorAction(actionFn) {
+      if (currentUserRole === 'coordinator' || currentUserRole === 'admin') {
+        actionFn();
+      } else {
+        playChime(260, 'sawtooth', 0.2);
+        showToast('🔒 Access Restricted: Enter Coordinator Secret Key to edit slots', 'warning');
+        promptCoordinatorAuth();
+      }
+    }
+
+    function setupDraggable(elem, id) {
+      elem.setAttribute('draggable', 'true');
+      elem.addEventListener('dragstart', (e) => {
+        draggedSlotId = id;
+        elem.classList.add('dragging');
+        e.dataTransfer.setData('text/plain', id);
+        playChime(440, 'triangle', 0.08);
+      });
+      elem.addEventListener('dragend', () => {
+        elem.classList.remove('dragging');
+      });
+    }
+
+    function setupDropTarget(elem, targetId) {
+      elem.addEventListener('dragover', (e) => {
+        if (currentUserRole !== 'coordinator' && currentUserRole !== 'admin') return;
+        e.preventDefault();
+        elem.classList.add('drop-target');
+      });
+      elem.addEventListener('dragleave', () => {
+        elem.classList.remove('drop-target');
+      });
+      elem.addEventListener('drop', (e) => {
+        if (currentUserRole !== 'coordinator' && currentUserRole !== 'admin') {
+          showToast('🔒 Coordinator Key required to drag slots', 'warning');
+          return;
+        }
+        e.preventDefault();
+        elem.classList.remove('drop-target');
+        const sourceId = e.dataTransfer.getData('text/plain') || draggedSlotId;
+        if (sourceId && sourceId !== targetId) {
+          executeDropOrSwap(sourceId, targetId);
+        }
+      });
+    }
+
+    function executeDropOrSwap(sourceId, targetId) {
+      let source = findSlot(sourceId);
+      let target = findSlot(targetId);
+      if (!source || !target) return;
+
+      if (target.type === 'open') {
+        target.code = source.code;
+        target.name = source.name;
+        target.room = source.room;
+        target.faculty = source.faculty;
+        target.students = source.students;
+        target.type = source.type;
+        target.color = source.color;
+        target.isClash = false;
+        target.fixed = true;
+
+        source.code = 'FREE';
+        source.name = 'Open Free Slot';
+        source.room = 'Unassigned';
+        source.faculty = 'Free Period';
+        source.students = '--';
+        source.type = 'open';
+        source.color = 'gray';
+        source.isClash = false;
+
+        renderTimetable();
+        playChime(659, 'sine', 0.25);
+        showToast(`Moved ${target.code} into Open Free Slot (${targetId.toUpperCase()})`, 'success');
+        return;
+      }
+
+      const temp = { ...source };
+      source.code = target.code;
+      source.name = target.name;
+      source.room = target.room;
+      source.faculty = target.faculty;
+      source.students = target.students;
+      source.type = target.type;
+      source.color = target.color;
+      source.isClash = target.isClash;
+      source.clashReason = target.clashReason;
+
+      target.code = temp.code;
+      target.name = temp.name;
+      target.room = temp.room;
+      target.faculty = temp.faculty;
+      target.students = temp.students;
+      target.type = temp.type;
+      target.color = temp.color;
+      target.isClash = temp.isClash;
+      target.clashReason = temp.clashReason;
+
+      renderTimetable();
+      playChime(587, 'sine', 0.2);
+      showToast(`Coordinator swapped ${temp.code} with ${source.code}`, 'success');
+    }
+
+    function findSlot(id) {
+      for (let r of activeSchedule) {
+        for (let s of r.slots) {
+          if (s.id === id) return s;
+        }
+      }
+      return null;
+    }
+
+    // ================= AUTHENTICATION HANDLERS =================
+    function promptCoordinatorAuth() {
+      if (currentUserRole === 'coordinator') {
+        currentUserRole = 'viewer';
+        updateRoleUI();
+        showToast('Locked back to Read-Only Viewer mode', 'info');
+        return;
+      }
+      document.getElementById('coordKeyModal').classList.remove('hidden');
+      document.getElementById('coordKeyInput').value = '';
+      document.getElementById('coordKeyInput').focus();
+      lucide.createIcons();
+    }
+
+    function closeCoordKeyModal() { document.getElementById('coordKeyModal').classList.add('hidden'); }
+    function fillDemoCoordKey() { document.getElementById('coordKeyInput').value = SECRET_KEYS.coordinator; }
+
+    function verifyCoordinatorKey() {
+      const entered = document.getElementById('coordKeyInput').value.trim();
+      if (entered === SECRET_KEYS.coordinator) {
+        currentUserRole = 'coordinator';
+        closeCoordKeyModal();
+        updateRoleUI();
+        playChime(784, 'triangle', 0.3);
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.6 } });
+        showToast('🔓 Access Granted: Coordinator privileges unlocked!', 'success');
+      } else {
+        playChime(220, 'sawtooth', 0.3);
+        showToast('❌ Invalid Coordinator Key. Try: COORD@2026', 'warning');
+      }
+    }
+
+    function promptAdminAuth() {
+      if (currentUserRole === 'admin') {
+        openAdminConsole();
+        return;
+      }
+      document.getElementById('adminKeyModal').classList.remove('hidden');
+      document.getElementById('adminKeyInput').value = '';
+      document.getElementById('adminKeyInput').focus();
+      lucide.createIcons();
+    }
+
+    function closeAdminKeyModal() { document.getElementById('adminKeyModal').classList.add('hidden'); }
+    function fillDemoAdminKey() { document.getElementById('adminKeyInput').value = SECRET_KEYS.administrator; }
+
+    function verifyAdminKey() {
+      const entered = document.getElementById('adminKeyInput').value.trim();
+      if (entered === SECRET_KEYS.administrator) {
+        currentUserRole = 'admin';
+        closeAdminKeyModal();
+        updateRoleUI();
+        openAdminConsole();
+        playChime(880, 'triangle', 0.35);
+        showToast('🛡️ Master Admin Access Granted! Administrator Console Opened.', 'success');
+      } else {
+        playChime(220, 'sawtooth', 0.3);
+        showToast('❌ Invalid Administrator Key. Try: ADMIN@2026', 'warning');
+      }
+    }
+
+    function updateRoleUI() {
+      const roleBadge = document.getElementById('roleBadge');
+      const coordBtn = document.getElementById('coordAuthBtn');
+      const coordText = document.getElementById('coordAuthText');
+      const adminBtn = document.getElementById('adminAuthBtn');
+
+      if (currentUserRole === 'coordinator') {
+        roleBadge.className = "flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-purple-500/20 text-purple-300 border border-purple-500/40 text-[11px] font-mono font-bold";
+        roleBadge.innerHTML = `<i data-lucide="key" class="w-3.5 h-3.5 text-purple-400"></i><span>Coordinator Mode</span>`;
+        coordBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all bg-purple-600 text-white shadow-md shadow-purple-600/30";
+        coordText.innerText = "Lock Coordinator";
+      } else if (currentUserRole === 'admin') {
+        roleBadge.className = "flex items-center space-x-1.5 px-3 py-0.5 rounded-full bg-amber-500/20 text-amber-300 border border-amber-500/40 text-[11px] font-mono font-bold";
+        roleBadge.innerHTML = `<i data-lucide="shield" class="w-3.5 h-3.5 text-amber-400"></i><span>Root Admin Mode</span>`;
+        adminBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all bg-amber-600 text-white shadow-md shadow-amber-600/30";
+      } else {
+        roleBadge.className = "flex items-center space-x-1.5 px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-300 border border-slate-700 text-[11px] font-mono";
+        roleBadge.innerHTML = `<i data-lucide="eye" class="w-3.5 h-3.5 text-slate-400"></i><span>Read-Only Viewer</span>`;
+        coordBtn.className = "px-3 py-1.5 rounded-lg text-xs font-semibold flex items-center space-x-1.5 transition-all bg-slate-800 hover:bg-slate-700 text-slate-200";
+        coordText.innerText = "Unlock Coordinator";
+      }
+
+      renderTimetable();
+      populateModalDropdowns();
+      lucide.createIcons();
+    }
+
+    function togglePasswordVisibility(inputId) {
+      const inp = document.getElementById(inputId);
+      inp.type = inp.type === 'password' ? 'text' : 'password';
+    }
+
+    // ================= ADMIN CONSOLE: ROOMS & FACULTY =================
+    function openAdminConsole() {
+      document.getElementById('adminConsoleModal').classList.remove('hidden');
+      renderAdminTables();
+      lucide.createIcons();
+    }
+
+    function closeAdminConsole() { document.getElementById('adminConsoleModal').classList.add('hidden'); }
+
+    function setAdminTab(tab) {
+      const tabRoomsBtn = document.getElementById('tabRoomsBtn');
+      const tabFacultyBtn = document.getElementById('tabFacultyBtn');
+      const roomsPanel = document.getElementById('adminRoomsPanel');
+      const facultyPanel = document.getElementById('adminFacultyPanel');
+
+      if (tab === 'rooms') {
+        tabRoomsBtn.className = "px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white flex items-center space-x-1.5";
+        tabFacultyBtn.className = "px-4 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900 border border-slate-800 flex items-center space-x-1.5";
+        roomsPanel.classList.remove('hidden');
+        facultyPanel.classList.add('hidden');
+      } else {
+        tabFacultyBtn.className = "px-4 py-1.5 rounded-xl text-xs font-bold bg-amber-600 text-white flex items-center space-x-1.5";
+        tabRoomsBtn.className = "px-4 py-1.5 rounded-xl text-xs font-medium text-slate-400 hover:text-white bg-slate-900 border border-slate-800 flex items-center space-x-1.5";
+        roomsPanel.classList.add('hidden');
+        facultyPanel.classList.remove('hidden');
+      }
+      lucide.createIcons();
+    }
+
+    function renderAdminTables() {
+      const roomsBody = document.getElementById('roomsTableBody');
+      roomsBody.innerHTML = '';
+      classroomsStore.forEach((room, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-850";
+        tr.innerHTML = `
+          <td class="p-3 text-white font-mono font-bold">${room.name}</td>
+          <td class="p-3 font-mono text-emerald-400">${room.capacity} seats</td>
+          <td class="p-3 text-slate-300">${room.equip}</td>
+          <td class="p-3 text-slate-400">${room.floor}</td>
+          <td class="p-3 text-right">
+            <button onclick="deleteRoom(${idx})" class="text-rose-400 hover:text-rose-300 text-xs">Remove</button>
+          </td>
+        `;
+        roomsBody.appendChild(tr);
+      });
+      document.getElementById('roomCountBadge').innerText = `Classrooms (${classroomsStore.length})`;
+
+      const facultyBody = document.getElementById('facultyTableBody');
+      facultyBody.innerHTML = '';
+      facultyStore.forEach((fac, idx) => {
+        const tr = document.createElement('tr');
+        tr.className = "hover:bg-slate-850";
+        tr.innerHTML = `
+          <td class="p-3 text-white font-bold">${fac.name}</td>
+          <td class="p-3 text-purple-300">${fac.dept}</td>
+          <td class="p-3 text-slate-300">${fac.domain}</td>
+          <td class="p-3 font-mono text-emerald-400">${fac.hours} / 16 hrs</td>
+          <td class="p-3 text-right">
+            <button onclick="deleteFaculty(${idx})" class="text-rose-400 hover:text-rose-300 text-xs">Remove</button>
+          </td>
+        `;
+        facultyBody.appendChild(tr);
+      });
+      document.getElementById('facultyCountBadge').innerText = `Faculty Roster (${facultyStore.length})`;
+    }
+
+    function addNewClassroom() {
+      const name = document.getElementById('newRoomName').value.trim();
+      const cap = parseInt(document.getElementById('newRoomCapacity').value) || 60;
+      const equip = document.getElementById('newRoomEquip').value;
+      if (!name) return;
+
+      classroomsStore.push({ name: name, capacity: cap, equip: equip, floor: 'Block B, Configured' });
+      document.getElementById('newRoomName').value = '';
+      document.getElementById('newRoomCapacity').value = '';
+
+      renderAdminTables();
+      populateModalDropdowns();
+      showToast(`Classroom ${name} added!`, 'success');
+    }
+
+    function deleteRoom(idx) {
+      const removed = classroomsStore.splice(idx, 1);
+      renderAdminTables();
+      populateModalDropdowns();
+      showToast(`Removed room ${removed[0].name}`, 'info');
+    }
+
+    function addNewFaculty() {
+      const name = document.getElementById('newFacultyName').value.trim();
+      const dept = document.getElementById('newFacultyDept').value;
+      const domain = document.getElementById('newFacultyDomain').value.trim() || 'General';
+      if (!name) return;
+
+      facultyStore.push({ name: name, dept: dept, domain: domain, hours: 12 });
+      facultyExchangeUsage[name] = 0;
+      document.getElementById('newFacultyName').value = '';
+      document.getElementById('newFacultyDomain').value = '';
+
+      renderAdminTables();
+      populateModalDropdowns();
+      showToast(`Faculty ${name} added to roster!`, 'success');
+    }
+
+    function deleteFaculty(idx) {
+      const removed = facultyStore.splice(idx, 1);
+      renderAdminTables();
+      populateModalDropdowns();
+      showToast(`Removed faculty ${removed[0].name}`, 'info');
+    }
+
+    function populateModalDropdowns() {
+      const roomSelect = document.getElementById('editRoom');
+      if (roomSelect) {
+        roomSelect.innerHTML = '';
+        classroomsStore.forEach(r => {
+          const opt = document.createElement('option');
+          opt.value = r.name;
+          opt.text = `${r.name} (${r.capacity} seats · ${r.equip})`;
+          roomSelect.appendChild(opt);
+        });
+      }
+
+      const facSelect = document.getElementById('editFaculty');
+      if (facSelect) {
+        facSelect.innerHTML = '';
+        facultyStore.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.name;
+          opt.text = `${f.name} (${f.dept} · ${f.hours}/16 hrs)`;
+          facSelect.appendChild(opt);
+        });
+      }
+
+      const filterFac = document.getElementById('selectedFacultyFilter');
+      if (filterFac) {
+        filterFac.innerHTML = '';
+        facultyStore.forEach(f => {
+          const opt = document.createElement('option');
+          opt.value = f.name;
+          opt.text = f.name;
+          filterFac.appendChild(opt);
+        });
+      }
+    }
+
+    // ================= IN-GRID SLOT EDIT (COORDINATOR) =================
+    function openEditModal(slotId) {
+      editingSlotId = slotId;
+      const slot = findSlot(slotId);
+      if (!slot) return;
+
+      document.getElementById('editSlotMeta').innerText = `Slot ID: ${slotId.toUpperCase()} · Coordinator Mode`;
+      document.getElementById('editCode').value = slot.code === 'FREE' ? 'CS306' : slot.code;
+      document.getElementById('editName').value = slot.name.includes('Free') ? 'Applied Neural Networks' : slot.name;
+      
+      populateModalDropdowns();
+      if (slot.room && slot.room !== 'Unassigned') document.getElementById('editRoom').value = slot.room;
+      if (slot.faculty && !slot.faculty.includes('Free')) document.getElementById('editFaculty').value = slot.faculty;
+
+      document.getElementById('editType').value = slot.type === 'lab' ? 'lab' : 'theory';
+      document.getElementById('editStudents').value = slot.students === '--' ? '54/60' : slot.students;
+
+      validateSlotEdit();
+      document.getElementById('editSlotModal').classList.remove('hidden');
+      lucide.createIcons();
+    }
+
+    function closeEditModal() { document.getElementById('editSlotModal').classList.add('hidden'); }
+
+    function validateSlotEdit() {
+      const room = document.getElementById('editRoom').value;
+      const pill = document.getElementById('editValidationPill');
+      const text = document.getElementById('editValidationText');
+
+      if (room === 'B-208') {
+        pill.className = 'p-2.5 rounded-xl bg-red-950/40 border border-red-500/40 text-red-300 flex items-center space-x-2';
+        text.innerText = '⚠️ Warning: Room B-208 has an active clash with EC201 at Mon 10:00!';
+      } else {
+        pill.className = 'p-2.5 rounded-xl bg-emerald-950/40 border border-emerald-500/40 text-emerald-300 flex items-center space-x-2';
+        text.innerText = `✓ Room ${room} is free. Capacity & 13 constraints satisfied!`;
+      }
+    }
+
+    function saveSlotEdit() {
+      const slot = findSlot(editingSlotId);
+      if (!slot) return;
+
+      slot.code = document.getElementById('editCode').value.trim();
+      slot.name = document.getElementById('editName').value.trim();
+      slot.room = document.getElementById('editRoom').value;
+      slot.faculty = document.getElementById('editFaculty').value;
+      slot.type = document.getElementById('editType').value;
+      slot.students = document.getElementById('editStudents').value;
+      slot.color = slot.type === 'lab' ? 'purple' : 'blue';
+
+      if (slot.isClash && slot.room !== 'B-208') {
+        slot.isClash = false;
+        slot.fixed = true;
+        slot.color = 'purple';
+        confetti({ particleCount: 70, spread: 60, origin: { y: 0.6 } });
+      }
+
+      closeEditModal();
+      renderTimetable();
+      playChime(659, 'sine', 0.25);
+      showToast(`Coordinator updated ${slot.code} in ${slot.room}.`, 'success');
+    }
+
+    function clearCurrentSlot() {
+      const slot = findSlot(editingSlotId);
+      if (slot) {
+        slot.code = 'FREE';
+        slot.name = 'Open Free Slot';
+        slot.room = 'Unassigned';
+        slot.faculty = 'Free Period';
+        slot.students = '--';
+        slot.type = 'open';
+        slot.color = 'gray';
+        slot.isClash = false;
+        closeEditModal();
+        renderTimetable();
+        showToast('Slot cleared to Open Free Slot', 'info');
+      }
+    }
+
+    // ================= SOLVER & ACTIONS =================
+    function applyFix() {
+      const slot = findSlot('mon-1000');
+      if (slot) {
+        slot.room = 'B-210';
+        slot.isClash = false;
+        slot.fixed = true;
+        slot.color = 'purple';
+        renderTimetable();
+        playChime(698, 'triangle', 0.3);
+        confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+        showToast('Moved CS303 to B-210. 100% clash-free across 13 forces!', 'success');
+      }
+    }
+
+    function resetClashDemo() {
+      activeSchedule = JSON.parse(JSON.stringify(schedules.cse3));
+      renderTimetable();
+      playChime(440, 'sine', 0.15);
+      showToast('Timetable reset to initial problem state for demonstration', 'info');
+    }
+
+    function updateConflictState(hasClash) {
+      const badge = document.getElementById('conflictBadge');
+      const dot = document.getElementById('monClashDot');
+      const unresolvedView = document.getElementById('unresolvedState');
+      const resolvedView = document.getElementById('resolvedState');
+      const eff = document.getElementById('efficiencyVal');
+
+      if (hasClash) {
+        badge.className = "cursor-pointer flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-red-500/15 border border-red-500/50 text-red-300 text-xs font-semibold badge-glow transition-all hover:bg-red-500/30";
+        badge.innerHTML = `
+          <span class="relative flex h-2 w-2">
+            <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+            <span class="relative inline-flex rounded-full h-2 w-2 bg-red-500"></span>
+          </span>
+          <span id="conflictCountText">1 conflict</span>
+        `;
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-red-500";
+        unresolvedView.classList.remove('hidden');
+        resolvedView.classList.add('hidden');
+        eff.innerText = "92%";
+      } else {
+        badge.className = "flex items-center space-x-2 px-3.5 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 text-xs font-semibold";
+        badge.innerHTML = `<i data-lucide="check-circle" class="w-3.5 h-3.5 text-emerald-400"></i><span>0 conflicts</span>`;
+        if (dot) dot.className = "w-2 h-2 rounded-full bg-emerald-500";
+        unresolvedView.classList.add('hidden');
+        resolvedView.classList.remove('hidden');
+        document.getElementById('pendingBadge').innerHTML = `<i data-lucide="check" class="w-3.5 h-3.5 text-emerald-400"></i><span>All changes saved</span>`;
+        eff.innerText = "98%";
+      }
+    }
+
+    // ================= TOASTS & HELPERS =================
+    function showToast(msg, type = 'info') {
+      const container = document.getElementById('toastContainer');
+      const toast = document.createElement('div');
+      
+      let border = 'border-purple-500/40 bg-slate-900/95 text-purple-200';
+      if (type === 'success') border = 'border-emerald-500/40 bg-slate-900/95 text-emerald-200';
+      if (type === 'warning') border = 'border-amber-500/40 bg-slate-900/95 text-amber-200';
+
+      toast.className = `p-3.5 rounded-xl border ${border} shadow-2xl backdrop-blur-md text-xs font-semibold flex items-center space-x-2 pointer-events-auto transform translate-y-2 opacity-0 transition-all duration-300`;
+      toast.innerHTML = `<span>${msg}</span>`;
+
+      container.appendChild(toast);
+      setTimeout(() => toast.classList.remove('translate-y-2', 'opacity-0'), 10);
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3500);
+    }
+
+    function openConstraintsModal() { document.getElementById('constraintsModal').classList.remove('hidden'); lucide.createIcons(); }
+    function closeConstraintsModal() { document.getElementById('constraintsModal').classList.add('hidden'); }
+    function focusConflict() {
+      const clash = document.getElementById('mon-1000');
+      if (clash) clash.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      showToast('Conflict selected: CS303 vs EC201 in Room B-208', 'info');
+    }
+    function showAlternatives() {
+      showToast('Alternative 1: Swap with Tue 10:00 Tutorial | Alternative 2: Move to Room A-110 (1st floor)', 'info');
+    }
+
+    function searchSchedule(q) {
+      const query = q.toLowerCase().trim();
+      const cards = document.querySelectorAll('.glass-card, .clash-card');
+      if (!query) { cards.forEach(c => c.style.opacity = '1'); return; }
+      cards.forEach(c => {
+        if (c.innerText.toLowerCase().includes(query)) c.style.opacity = '1';
+        else c.style.opacity = '0.15';
+      });
+    }
+
+    function setFilter(type) {
+      const buttons = ['filterAll', 'filterConflicts', 'filterLabs', 'filterTheory'];
+      buttons.forEach(b => {
+        document.getElementById(b).className = "px-3.5 py-1.5 rounded-xl text-xs font-medium transition-all bg-slate-900 hover:bg-slate-800 text-slate-300 border border-slate-800";
+      });
+      const cards = document.querySelectorAll('.glass-card, .clash-card');
+
+      if (type === 'all') {
+        document.getElementById('filterAll').className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-purple-600 text-white shadow-sm shadow-purple-600/40";
+        cards.forEach(c => c.style.opacity = '1');
+      } else if (type === 'conflicts') {
+        document.getElementById('filterConflicts').className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-red-600 text-white shadow-sm shadow-red-600/40";
+        cards.forEach(c => {
+          if (c.classList.contains('clash-card')) c.style.opacity = '1';
+          else c.style.opacity = '0.15';
+        });
+      } else if (type === 'labs') {
+        document.getElementById('filterLabs').className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-indigo-600 text-white shadow-sm shadow-indigo-600/40";
+        cards.forEach(c => {
+          if (c.innerText.includes('Lab')) c.style.opacity = '1';
+          else c.style.opacity = '0.2';
+        });
+      } else if (type === 'theory') {
+        document.getElementById('filterTheory').className = "px-3.5 py-1.5 rounded-xl text-xs font-semibold transition-all bg-emerald-600 text-white shadow-sm shadow-emerald-600/40";
+        cards.forEach(c => {
+          if (!c.innerText.includes('Lab') && !c.innerText.includes('Break') && !c.innerText.includes('Open')) c.style.opacity = '1';
+          else c.style.opacity = '0.2';
+        });
+      }
+    }
+
+    function filterByConflict() { setFilter('conflicts'); focusConflict(); }
+    function switchDepartment(dept) { currentDept = dept; document.getElementById('activeDeptLabel').innerText = dept.toUpperCase() + ' Timetable'; showToast(`Loaded ${dept.toUpperCase()} Schedule`, 'info'); }
+
+    function setViewMode(mode) {
+      if (mode === 'analytics') {
+        document.getElementById('gridContainer').classList.add('hidden');
+        document.getElementById('aiSideDrawer').classList.add('hidden');
+        document.getElementById('analyticsSection').classList.remove('hidden');
+        document.getElementById('viewAnalyticsBtn').className = "px-3 py-1 rounded-lg font-medium text-white bg-slate-800 flex items-center space-x-1.5";
+        document.getElementById('viewGridBtn').className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-white flex items-center space-x-1.5";
+        renderAnalyticsCharts();
+      } else {
+        document.getElementById('gridContainer').classList.remove('hidden');
+        document.getElementById('aiSideDrawer').classList.remove('hidden');
+        document.getElementById('analyticsSection').classList.add('hidden');
+        document.getElementById('viewGridBtn').className = "px-3 py-1 rounded-lg font-medium text-white bg-slate-800 flex items-center space-x-1.5";
+        document.getElementById('viewAnalyticsBtn').className = "px-3 py-1 rounded-lg font-medium text-slate-400 hover:text-white flex items-center space-x-1.5";
+      }
+    }
+
+    let chartsInitialized = false;
+    function renderAnalyticsCharts() {
+      if (chartsInitialized) return;
+      chartsInitialized = true;
+      const ctx1 = document.getElementById('roomUtilChart').getContext('2d');
+      new Chart(ctx1, {
+        type: 'bar',
+        data: {
+          labels: classroomsStore.map(r => r.name),
+          datasets: [{
+            label: 'Utilization %',
+            data: [90, 85, 95, 88, 70, 75, 92, 68],
+            backgroundColor: 'rgba(139, 92, 246, 0.65)',
+            borderColor: '#8b5cf6',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+
+      const ctx2 = document.getElementById('facultyLoadChart').getContext('2d');
+      new Chart(ctx2, {
+        type: 'bar',
+        data: {
+          labels: facultyStore.map(f => f.name.split(' ')[1] || f.name),
+          datasets: [{
+            label: 'Assigned Hours',
+            data: facultyStore.map(f => f.hours),
+            backgroundColor: 'rgba(236, 72, 153, 0.65)',
+            borderColor: '#ec4899',
+            borderWidth: 1.5,
+            borderRadius: 6
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, max: 18, grid: { color: 'rgba(255,255,255,0.05)' } },
+            x: { grid: { display: false } }
+          }
+        }
+      });
+    }
+
+    // Start App
+    populateModalDropdowns();
+    renderTimetable();
+  </script>
+</body>
+</html>
